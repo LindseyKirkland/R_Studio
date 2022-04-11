@@ -1,0 +1,168 @@
+---
+title: "Forecasting Averaging"
+subtitle: "Forecasting Inflation"
+author: Lindsey Kirkland
+date: "`r format(Sys.Date(),'%B %d, %Y')`"
+output:
+  html_document:
+    df_page: paged
+    code_folding: "hide"
+    toc: no
+    fig_caption: yes
+    theme: lumen
+    toc_float: no
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+rm(list = ls())
+graphics.off()
+```
+
+```{r load packages, message = FALSE, warning = TRUE}
+require(fpp3)
+require(tsibble)
+require(tidyverse)
+require(tidyquant)
+require(lubridate)
+require(timetk)
+require(kableExtra)
+require(knitr)
+
+require(stargazer)
+require(GGally)
+require(reshape2)
+```
+
+
+## Introduction
+
+The variables I’m using for my forecasting are PCEPI, UNRATE, EXPERINF1YR, TCU, and INDPRO. PCEPI is the Personal Consumption Expenditures: Chain-type Price Index where 2012 is the base year(or equal to 100), UNRATE is the unemployment rate in percent, EXPERINF1YR is the 1-Year Expected Inflation, TCU is the Capacity Utilization: Total Index in percent of capacity, and INDPRO is the Industrial Production: Total Index where 2017 is the base year(or equal to 100). All the variables have been seasonally adjusted, meaning their change due to seasonality has been essentially nullified in the variable, except for EXPERINF1YR.
+
+
+These are relevant variables for inflation forecasting because they are all linked to annual inflation rates in some way, and including them can contribute to a better, more accurate model. Meyer and Pasaogullari, economists at the Federal Reserve Bank of Cleveland state that in their inflation modeling, “we add … those that are thought to improve inflation forecasts: real GDP, unemployment, industrial production, manufacturing production, and capacity utilization. Measures of economic activity are thought to be useful in forecasting inflation, with the underlying pace of expansion, or robustness of growth putting pressure on prices” (Pasaogullari). This means that they are looking to include factors that generally contribute to the pace of the economy in order to link the underlying causes of inflation to their forecast. In my forecast, I am using variables for unemployment, industrial production, and capacity utilization, all of which Meyers and Passaogullari directly mention. I am also using personal consumption expenditures, which is how much an individual or household is spending annually, and unemployment rate. These are measures of generally how well people are doing economically by observing how much money they have to spend, and how much they are actually spending. We often observe a direct link between these factors and the inflation rate. For example, a lower unemployment rate usually means higher prices for goods, and therefore a larger inflation rate. 
+Furthermore, we are using the Phillips Curve to measure and compare our forecasting results. The Phillips Curve is a downward sloping curve that shows inflation rate on its Y-axis and unemployment rate on its X-axis. According to research published in The Journal of Monetary Economics, “Inflation forecasts produced by the Phillips Curve generally have been more accurate than forecasts based on other macroeconomic variables” (Stock). In the article, Stock and Watson argue that the Phillips Curve is generally a reliable, stable, and accurate tool for forecasting inflation. By including specific and relevant variables, and through the use of the Phillips Curve, we are setting conditions to forecast an accurate inflation model. 
+
+
+```{r loadData, message = FALSE, warning = FALSE}
+varList <- c("PCEPI", "UNRATE", "EXPINF1YR",	"TCU", "INDPRO")
+X <-
+  tq_get(varList, get = "economic.data", from = "1982-01-01") %>%
+  mutate(Month = yearmonth(date), value = price) %>%
+  dplyr::select(-c(date, price)) %>%
+  as_tsibble(index = Month, key = symbol)
+Xw <- X %>%
+  pivot_wider(names_from = symbol, values_from = value) %>%
+  as_tsibble()  %>% 
+  drop_na()
+```
+
+
+```{r mutation, message = FALSE, warning = FALSE}
+Z <- Xw %>% select(c(PCEPI, UNRATE, EXPINF1YR,	TCU, INDPRO)) %>%
+  mutate(infl = 1200*log(PCEPI/lag(PCEPI))) %>% 
+  mutate(dinfl = infl - lag(infl,1)) %>% 
+  mutate(dinfl12 = 100*log(PCEPI/lag(PCEPI,12)) - lag(infl,12)) %>% 
+  mutate(unrate = UNRATE - lag(UNRATE)) %>% 
+  mutate(expinf1yr = EXPINF1YR) %>%
+  mutate(tcu = TCU - lag(TCU)) %>% 
+  mutate(indpro = 1200*log(INDPRO/lag(INDPRO))) %>% 
+  select(-c(PCEPI, UNRATE, EXPINF1YR,	TCU, INDPRO)) %>% 
+  drop_na()
+
+
+train_data <- Z %>% filter_index(~ "2019-12")
+test_data <- Z %>% filter_index("2020-01" ~ .)
+```
+
+
+```{r melt, message = FALSE, warning = FALSE}
+Zm <- melt(Z, "Month")
+ggplot(Zm, aes(Month, value)) + 
+  geom_line(color = "blue") + 
+  facet_wrap(~variable, scales = "free", ncol = 2)
+
+```
+
+```{r Phillips Curve, message = FALSE, warning = FALSE}
+fitAll <- train_data %>% 
+  model(
+    mPC = TSLM(dinfl12 ~ 1 +
+                 lag(dinfl,12) + lag(dinfl,13) + lag(dinfl,14) +
+                 lag(dinfl,15) + lag(dinfl,16) + lag(dinfl,17) +
+                 lag(dinfl,18) + lag(dinfl,19) + lag(dinfl,20) +
+                 lag(dinfl,21) + lag(dinfl,22) + lag(dinfl,23) +
+                 lag(unrate,12) + lag(unrate,13) + lag(unrate,14) +
+                 lag(unrate,15) + lag(unrate,16) + lag(unrate,17) +
+                 lag(unrate,18) + lag(unrate,19) + lag(unrate,20) +
+                 lag(unrate,21) + lag(unrate,22) + lag(unrate,23) 
+                 ),
+
+        mEXPINF1YR = TSLM(dinfl12 ~ 1 +
+                 lag(dinfl,12) + lag(dinfl,13) + lag(dinfl,14) +
+                 lag(dinfl,15) + lag(dinfl,16) + lag(dinfl,17) +
+                 lag(dinfl,18) + lag(dinfl,19) + lag(dinfl,20) +
+                 lag(dinfl,21) + lag(dinfl,22) + lag(dinfl,23) +
+                 lag(unrate,12) + lag(unrate,13) + lag(unrate,14) +
+                 lag(unrate,15) + lag(unrate,16) + lag(unrate,17) +
+                 lag(unrate,18) + lag(unrate,19) + lag(unrate,20) +
+                 lag(unrate,21) + lag(unrate,22) + lag(unrate,23) 
+                 ),
+    
+        mTCU = TSLM(dinfl12 ~ 1 +
+                 lag(dinfl,12) + lag(dinfl,13) + lag(dinfl,14) +
+                 lag(dinfl,15) + lag(dinfl,16) + lag(dinfl,17) +
+                 lag(dinfl,18) + lag(dinfl,19) + lag(dinfl,20) +
+                 lag(dinfl,21) + lag(dinfl,22) + lag(dinfl,23) +
+                 lag(unrate,12) + lag(unrate,13) + lag(unrate,14) +
+                 lag(unrate,15) + lag(unrate,16) + lag(unrate,17) +
+                 lag(unrate,18) + lag(unrate,19) + lag(unrate,20) +
+                 lag(unrate,21) + lag(unrate,22) + lag(unrate,23) 
+                 ),
+    
+        mINDPRO = TSLM(dinfl12 ~ 1 +
+                 lag(dinfl,12) + lag(dinfl,13) + lag(dinfl,14) +
+                 lag(dinfl,15) + lag(dinfl,16) + lag(dinfl,17) +
+                 lag(dinfl,18) + lag(dinfl,19) + lag(dinfl,20) +
+                 lag(dinfl,21) + lag(dinfl,22) + lag(dinfl,23) +
+                 lag(unrate,12) + lag(unrate,13) + lag(unrate,14) +
+                 lag(unrate,15) + lag(unrate,16) + lag(unrate,17) +
+                 lag(unrate,18) + lag(unrate,19) + lag(unrate,20) +
+                 lag(unrate,21) + lag(unrate,22) + lag(unrate,23) 
+                 )
+  )
+tidy(fitAll)
+```
+
+```{r Accuracy, message = FALSE, warning = FALSE}
+accuracy(fitAll)
+```
+
+### Examining the fit of model mINDPRO
+
+
+```{r fitting, message = FALSE, warning = FALSE}
+fitAll %>% select(mINDPRO) %>% report()
+```
+
+
+```{r residuals, message = FALSE, warning = FALSE}
+fitAll %>% select(mINDPRO) %>% gg_tsresiduals()
+```
+
+
+
+
+```{r model, message = FALSE, warning = FALSE}
+fitTotal1 <- fitAll %>%
+  mutate(ensem = (mPC + mEXPINF1YR +	mTCU + mINDPRO)/4)
+
+fitTotal2 <- fitTotal1 %>% forecast(new_data = test_data)
+fitTotal2 %>% autoplot(filter(Z , year(Month) > 2016), level = c(95))
+```
+
+
+```{r fullAccuracy1, message = FALSE, warning = FALSE}
+accuracy(fitTotal1)
+```
+
