@@ -153,7 +153,7 @@ fitAll %>% select(mINDPRO) %>% gg_tsresiduals()
 ```
 
 
-
+### The Full Model
 
 ```{r model, message = FALSE, warning = FALSE}
 fitTotal1 <- fitAll %>%
@@ -167,4 +167,13 @@ fitTotal2 %>% autoplot(filter(Z , year(Month) > 2016), level = c(95))
 ```{r fullAccuracy1, message = FALSE, warning = FALSE}
 accuracy(fitTotal1)
 ```
+
+
+### References
+
+Pasaogullari, Mehmet, and Brent H. Meyer. “Simple Ways to Forecast Inflation: What Works Best?” Economic Commentary (Federal Reserve Bank of Cleveland), 2010, pp. 1–6. Crossref, https://doi.org/10.26509/frbc-ec-201017.
+
+Stock, James H., and Mark W. Watson. “Forecasting Inflation.” Journal of Monetary Economics, vol. 44, no. 2, 1999, pp. 293–335. Crossref, https://doi.org/10.1016/s0304-3932(99)00027-6. 
+
+
 
