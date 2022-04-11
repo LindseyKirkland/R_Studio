@@ -35,13 +35,15 @@ require(reshape2)
 ```
 
 
-## Introduction
+### Introduction
 
 The variables I’m using for my forecasting are PCEPI, UNRATE, EXPERINF1YR, TCU, and INDPRO. PCEPI is the Personal Consumption Expenditures: Chain-type Price Index where 2012 is the base year(or equal to 100), UNRATE is the unemployment rate in percent, EXPERINF1YR is the 1-Year Expected Inflation, TCU is the Capacity Utilization: Total Index in percent of capacity, and INDPRO is the Industrial Production: Total Index where 2017 is the base year(or equal to 100). All the variables have been seasonally adjusted, meaning their change due to seasonality has been essentially nullified in the variable, except for EXPERINF1YR.
 
 
 These are relevant variables for inflation forecasting because they are all linked to annual inflation rates in some way, and including them can contribute to a better, more accurate model. Meyer and Pasaogullari, economists at the Federal Reserve Bank of Cleveland state that in their inflation modeling, “we add … those that are thought to improve inflation forecasts: real GDP, unemployment, industrial production, manufacturing production, and capacity utilization. Measures of economic activity are thought to be useful in forecasting inflation, with the underlying pace of expansion, or robustness of growth putting pressure on prices” (Pasaogullari). This means that they are looking to include factors that generally contribute to the pace of the economy in order to link the underlying causes of inflation to their forecast. In my forecast, I am using variables for unemployment, industrial production, and capacity utilization, all of which Meyers and Passaogullari directly mention. I am also using personal consumption expenditures, which is how much an individual or household is spending annually, and unemployment rate. These are measures of generally how well people are doing economically by observing how much money they have to spend, and how much they are actually spending. We often observe a direct link between these factors and the inflation rate. For example, a lower unemployment rate usually means higher prices for goods, and therefore a larger inflation rate. 
 Furthermore, we are using the Phillips Curve to measure and compare our forecasting results. The Phillips Curve is a downward sloping curve that shows inflation rate on its Y-axis and unemployment rate on its X-axis. According to research published in The Journal of Monetary Economics, “Inflation forecasts produced by the Phillips Curve generally have been more accurate than forecasts based on other macroeconomic variables” (Stock). In the article, Stock and Watson argue that the Phillips Curve is generally a reliable, stable, and accurate tool for forecasting inflation. By including specific and relevant variables, and through the use of the Phillips Curve, we are setting conditions to forecast an accurate inflation model. 
+
+Github Link: https://github.com/LindseyKirkland/R_Studio
 
 
 ```{r loadData, message = FALSE, warning = FALSE}
